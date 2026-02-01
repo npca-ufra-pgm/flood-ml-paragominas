@@ -373,33 +373,9 @@ The methodology includes multiple validation approaches:
    - Semi-supervised vs unsupervised vs threshold-based
    - Consistency analysis across approaches
 
-## Citation
-
-If you use this code in your research, please cite:
-
-```
-[Author names]. (2026). Flood Susceptibility Zoning in Urban Areas of 
-Paragominas-PA Using Machine Learning Techniques and Wide Coverage Data. 
-[Conference/Journal Name].
-```
-
 ## License
 
 [Specify your license here]
-
-## Contact
-
-For questions or collaborations, please contact:
-- Gilberto N S Jr
-- [Add contact information]
-
-## Acknowledgments
-
-- Google Earth Engine platform
-- CPRM/SGB for risk sector data
-- MapBiomas project
-- ANADEM team
-- Community dataset contributors
 
 ## References
 
