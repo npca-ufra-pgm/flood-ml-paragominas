@@ -1,36 +1,69 @@
-# Flood Susceptibility Mapping Using Machine Learning and Remote Sensing
+# Urban Flood Susceptibility Mapping Using Semi-Supervised Machine Learning
 
 ## Overview
 
-This repository contains the complete implementation code for urban flood susceptibility assessment in Paragominas, Pará, Brazil, using machine learning techniques and wide-coverage geospatial data. The methodology integrates semi-supervised learning, unsupervised clustering, and threshold-based classification with Google Earth Engine (GEE) and Python.
+This repository contains the complete implementation of an urban flood susceptibility assessment system for Paragominas, Pará, Brazil. The framework integrates semi-supervised machine learning with geospatial data processing in Google Earth Engine (GEE) and Python to identify flood-prone areas in urban regions. The methodology employs the Spy Technique for reliable negative sample identification, Random Forest classification, and generates a weighted susceptibility index (FSIVI - Flood Susceptibility Index based on Variable Importance).
 
 ## Abstract
 
-Urban flooding represents a significant environmental hazard requiring accurate susceptibility mapping for risk mitigation. This study presents a comprehensive framework combining multiple data sources (HAND, DEM, slope, TWI, soil hydraulic conductivity, land cover) with three classification approaches: (1) semi-supervised Random Forest using Spy technique for negative sample identification, (2) unsupervised K-means clustering, and (3) HAND-based threshold slicing. The final susceptibility index integrates variable importance weights derived from the Random Forest classifier.
+Urban flooding is a critical environmental hazard that requires accurate susceptibility mapping for effective risk mitigation and urban planning. This study presents a comprehensive geospatial framework that combines multiple hydrological and topographic variables with advanced machine learning techniques. The system processes seven key features—HAND (Height Above Nearest Drainage), DEM-derived elevation and slope, TWI (Topographic Wetness Index), soil hydraulic conductivity, distance to rivers, and land cover—using three complementary classification approaches:
+
+1. **Semi-supervised Random Forest** using the Spy Technique for reliable negative sample identification from unlabeled data
+2. **Unsupervised K-means clustering** for pattern discovery without labeled training data
+3. **HAND-based threshold slicing** at 3m, 4m, and 5m heights for physically-informed classification
+
+The final output is the FSIVI (Flood Susceptibility Index based on Variable Importance), a weighted continuous index that normalizes all geophysical variables and applies Random Forest-derived importance weights to generate a comprehensive flood susceptibility map. The methodology includes rigorous separability analysis using Pearson correlation, VIF (Variance Inflation Factor), PCA visualization, and Bhattacharyya/Mahalanobis distances to ensure class discrimination quality.
 
 ## Repository Structure
 
 ```
 flood-ml-paragominas/
-├── scripts/              # Original scripts in Portuguese
-│   ├── 2.1_Corregos_e_DistanciaDosRios.js
-│   ├── 2.2_GeracaoDatasetEspacial.js
-│   ├── 2.n_6.n_DataProcessToSemiSuperv_and_SeparabilityAnalysis.ipynb
-│   ├── 3_ProcessamentoEspacial_naoSuperv.js
-│   ├── 3_ProcessamentoEspacial_semiSuperv.js
-│   ├── 4_Pos_ProcessamentoEspacial.js
-│   └── 5_Visualizacao_posProcessamentoFinal.js
-└── scripts_en/           # English version for scientific publication
-    ├── 2.1_Streams_and_RiverDistance.js
-    ├── 2.2_SpatialDatasetGeneration.js
-    ├── 2.n_6.n_DataProcessToSemiSuperv_and_SeparabilityAnalysis.ipynb
-    ├── 3_UnsupervisedSpatialProcessing.js
-    ├── 3_SemiSupervisedSpatialProcessing.js
-    ├── 4_SpatialPostProcessing.js
-    └── 5_FinalPostProcessingVisualization.js
+├── arquivos_scripts/
+│   ├── scripts_en/                    # Main implementation scripts
+│   │   ├── 1_DataExploration_and_InitialDisplay.js
+│   │   ├── 2.1_Streams_and_RiverDistance.js
+│   │   ├── 2.2_SpatialDatasetGeneration.js
+│   │   ├── 2.n_6.n_DataProcessToSemiSuperv_and_SeparabilityAnalysis.ipynb
+│   │   ├── 3_UnsupervisedSpatialProcessing.js
+│   │   ├── 3_SemiSupervisedSpatialProcessing.js
+│   │   ├── 4_SpatialPostProcessing.js
+│   │   ├── 5_FinalPostProcessingVisualization.js
+│   │   ├── README.md                  # Detailed technical documentation
+│   │   ├── TRANSLATION_INDEX.md       # File reference guide
+│   │   └── files/                     # Data files and outputs
+│   │       ├── combined_dataset.csv
+│   │       ├── separabilityEvaluationData.csv
+│   │       ├── floodDataset_toAsset.csv
+│   │       ├── *.tif                  # Raster outputs (15 files)
+│   │       ├── Maps and Images/       # Visualizations (36 files)
+│   │       └── shapefiles/            # Vector data (5 files)
+│   └── [original files]               # Source files
+├── bkp/                               # Backup directory
+└── README.md                          # This file
 ```
 
 ## Methodology Workflow
+
+All scripts are located in `arquivos_scripts/scripts_en/`. Execute them in the order indicated below.
+
+### 0. Initial Data Exploration
+**Script:** `1_DataExploration_and_InitialDisplay.js`
+
+Preliminary exploration and visualization of base datasets to understand data characteristics and quality.
+
+**Key Operations:**
+- Initial exploration of DEM (ANADEM Brazil, 30m resolution)
+- Soil hydraulic conductivity (Ksat) visualization and gap analysis
+- Land use/cover inspection (MapBiomas Sentinel-2, class 24 for urban areas)
+- **Gap-filling strategy**: Pixels without Ksat data are filled using focal_median (45-pixel radius window)
+- Risk sector overlay for validation
+- Preliminary data quality assessment
+
+**Purpose:**
+- Understand spatial patterns and data completeness
+- Identify data quality issues requiring preprocessing
+- Establish visualization parameters for subsequent analyses
+- Validate geometric extents and projections
 
 ### 1. Preprocessing and Distance Calculation
 **Script:** `2.1_Streams_and_RiverDistance.js`
@@ -44,13 +77,14 @@ Computes Euclidean distance from each pixel to the nearest river or stream using
 - Export to Google Earth Engine Assets
 
 **Inputs:**
-- Drainage network shapefile (TrechosDrenagemParagominas)
-- Region of interest (ROI) geometry
-- Additional stream features
+- Drainage network shapefile: `/TrechosDrenagemParagominas_Intersesct`
+- Additional streams: `corrego_rio_urain_pgm` (FeatureCollection)
+- Region of interest (ROI): Urban area boundary geometry
+- Base projection: Dynamic World V1 (2024) for standardization
 
 **Outputs:**
-- Distance raster (10m resolution)
-- Unified rivers/streams vector layer
+- `river_distance.tif`: Distance raster at 10m resolution (meters)
+- `rivers_streams_pgm`: Unified drainage vector layer (exported to Assets and Drive)
 
 ### 2. Spatial Dataset Generation
 **Script:** `2.2_SpatialDatasetGeneration.js`
@@ -58,161 +92,334 @@ Computes Euclidean distance from each pixel to the nearest river or stream using
 Assembles multi-band raster stack with geophysical and hydrological variables, generates stratified samples for model training.
 
 **Variables Included:**
-- **HAND** (Height Above Nearest Drainage, 30m) - Global HAND dataset
-- **DEM** (Digital Elevation Model) - ANADEM Brazil
-- **Slope** (degrees) - Derived from DEM
-- **TWI** (Topographic Wetness Index) - Computed in QGIS
-- **Ksat** (Soil Hydraulic Conductivity, cm/day) - HiHydroSoil v2.0
-- **Distance to rivers** (meters) - From step 1
-- **Land cover** (MapBiomas Sentinel-2 Beta, 2022)
+- **HAND** (Height Above Nearest Drainage, 30m) - Global HAND dataset (hand-1000 variant with flow threshold = 1000)
+- **Elevation** (meters) - ANADEM Brazil DTM with NoData (-9999) removed
+- **Slope** (degrees) - Derived from ANADEM DEM using `ee.Terrain.slope()`
+- **TWI** (Topographic Wetness Index, dimensionless) - Computed externally in QGIS SAGA
+- **Ksat** (Soil Hydraulic Conductivity, cm/day) - HiHydroSoil v2.0 with gap-filling (focal median, 45-pixel radius, bilinear resampling)
+- **Distance to rivers** (meters) - From script 2.1
+- **Land cover** (classification code) - MapBiomas Sentinel-2 Beta 2022 (class 24 = urban area)
 
 **Sampling Strategy:**
-- Class 0 (unlabeled): 39,000 samples from buffer zone (200m around risk sectors)
-- Class 1 (flood): 4,000 samples from CPRM/SGB risk sectors
-- Stratified sampling at 10m resolution
+- **Class 0 (unlabeled)**: 39,000 stratified samples from 200m buffer zone around CPRM/SGB risk sectors
+- **Class 1 (flood)**: 4,000 stratified samples from within official flood risk sectors
+- Random seed: 0 (for reproducibility)
+- Sampling scale: 10 meters per pixel
+
+**Processing Steps:**
+1. Load and reproject all variables to EPSG:4326 at 10m resolution
+2. Apply gap-filling to Ksat (unmask with sentinel value 1000, replace with focal median)
+3. Stack all bands into multi-band image: `spatial_data_raster_flood`
+4. Generate stratified point samples with class labels
+5. Export raster stack to Assets
+6. Export sample dataset to Google Drive as `floodDataset_toDrive.csv`
 
 **Outputs:**
-- Multi-band raster stack
-- Training/validation dataset (CSV format)
-- Asset exports for GEE
+- `spatial_data_raster_flood`: Multi-band raster stack (7 bands total)
+- `floodDataset_toDrive.csv`: Training/validation samples exported to Google Drive folder `floodProjectAssets`
+- Asset exports for GEE pipeline integration
 
 ### 3. Semi-Supervised Learning Pipeline
-**Scripts:** `2.n_6.n_DataProcessToSemiSuperv_and_SeparabilityAnalysis.ipynb` (Python) + `3_SemiSupervisedSpatialProcessing.js` (GEE)
+**Scripts:** `2.n_6.n_DataProcessToSemiSuperv_and_SeparabilityAnalysis.ipynb` (Python/Colab) + `3_SemiSupervisedSpatialProcessing.js` (GEE)
 
-Implements Positive-Unlabeled (PU) learning using Spy technique to identify reliable negative samples.
+Implements Positive-Unlabeled (PU) learning using the **Spy Technique** to transform unlabeled data into reliable negative samples for semi-supervised classification.
 
-**Python Workflow (Google Colab):**
+#### Part A: Python Workflow (Google Colab)
 
-1. **SMOTE Oversampling:**
-   - Synthetic Minority Over-sampling Technique
-   - Increases positive class samples by 20%
-   - Balances training data distribution
+**1. Data Loading and Exploration:**
+- Load `floodDataset_toDrive.csv` from Google Drive
+- Feature columns: `distance`, `elevation`, `slope`, `soil_hydraulic_conductivity`, `hand`, `twi`
+- Target column: `classes` (0 = unlabeled, 1 = flood)
+- Visualizations: histograms, pairplots, boxplots by class
 
-2. **Spy Technique:**
-   - Selects 20% of positive samples as "spies"
-   - Mixes spies with unlabeled data
-   - Trains Naive Bayes classifier
-   - Computes probability threshold: μ - σ
-   - Identifies reliable negatives (P(positive) < threshold)
+**2. Correlation Analysis:**
+- Pearson correlation matrices for all classes, class 0, and class 1 separately
+- Heatmap visualizations to identify feature relationships
+- Pre-balancing multicollinearity assessment
 
-3. **Separability Analysis:**
-   - Pearson correlation matrices by class
-   - Variance Inflation Factor (VIF) for multicollinearity
-   - PCA visualization (2 components)
-   - Bhattacharyya distance
-   - Mahalanobis distance
-   - Silhouette score
+**3. Multicollinearity Detection (VIF):**
+- Variance Inflation Factor calculated for all features
+- Identifies redundant variables (VIF > 10 indicates high multicollinearity)
+- Computed separately for all classes, class 0, and class 1
 
-**GEE Workflow:**
+**4. SMOTE Oversampling:**
+- **Algorithm**: Synthetic Minority Over-sampling Technique (SMOTE)
+- **Sampling strategy**: 0.2 (increases positive class by 20%)
+- **Purpose**: Balance class distribution for Spy Technique
+- Creates synthetic flood samples using k-nearest neighbors interpolation
 
-4. **Random Forest Classification:**
-   - 100 decision trees
-   - 80/20 train-test split
-   - Uses combined dataset (labeled + reliable negatives)
-   - Computes confusion matrix and accuracy metrics
-   - Extracts variable importance scores
+**5. Spy Technique for Reliable Negative Identification:**
+```
+Step 1: Select 20% of positive samples randomly as "spies"
+Step 2: Mix spies with unlabeled class (class 0)
+Step 3: Train Naive Bayes classifier on {spies + unlabeled} vs {remaining positives}
+Step 4: Predict probabilities P(positive) for all unlabeled samples
+Step 5: Calculate threshold = mean(spy_probabilities) - std(spy_probabilities)
+Step 6: Label unlabeled samples with P(positive) < threshold as reliable negatives (class -1)
+Step 7: Remove remaining unlabeled samples (uncertain)
+```
 
-5. **Post-processing:**
-   - Focal mode filter (3x3 window) to reduce salt-and-pepper noise
-   - Smoothing of classification output
+#### Part B: Google Earth Engine Workflow
+
+**8. Random Forest Classification:**
+- **Input**: `combined_dataset` from Colab (uploaded to EE Assets)
+- **Features**: `elevation`, `distance`, `slope`, `soil_hydraulic_conductivity`, `hand`, `twi`
+- **Target**: `new_class` (1 = flood, -1 = reliable negative)
+- **Algorithm**: Random Forest with 100 trees (`ee.Classifier.smileRandomForest`)
+- **Data split**: 80% training, 20% testing (random seed = 42)
+- **Evaluation**: Confusion matrices for both training and test sets
+
+**9. Spatial Classification:**
+- Apply trained RF model to `spatial_data_raster_flood` multi-band image
+- Output: Binary classification (0 = no flood, 1 = flood risk)
+- Visualization: Red (#ff0606) for flood pixels, white (#ffffff) for non-flood
+
+**10. Smoothing and Export:**
+- Focal mode filter (3x3 kernel) to reduce salt-and-pepper noise
+- Export classified image: `img_SemiSupervisedClassified_flood_risk`
+- Export variable importance table for FSIVI calculation
 
 **Outputs:**
-- Classified flood risk image
-- Variable importance table
-- Accuracy metrics (training and test)
+- `img_SemiSupervisedClassified_flood_risk.tif`: Binary classification raster
+- Variable importance scores (elevation, distance, slope, Ksat, HAND, TWI)
+- Training accuracy metrics (console output)
+- Test set confusion matrix and accuracy
 
-### 4. Unsupervised Classification
+### 4. Unsupervised Classification (Alternative Approaches)
 **Script:** `3_UnsupervisedSpatialProcessing.js`
 
-Provides alternative classification approaches without labeled data dependency.
+Provides label-independent classification methods for comparison and validation of semi-supervised results.
 
 **Method 1: K-means Clustering (Weka XMeans)**
-- Automatic cluster determination (2-10 clusters)
-- Features: elevation, distance, slope, HAND
-- Focal mode smoothing applied
+- **Algorithm**: XMeans clusterer with automatic cluster number selection
+- **Cluster range**: 2 to 10 clusters (automatically determined)
+- **Features used**: `elevation`, `distance`, `slope`, `hand` (4 bands)
+- **Post-processing**: Focal mode filter (3x3 kernel) for spatial smoothing
+- **Cluster identification**: Reference point (`point_Cluster`) used to identify flood risk cluster ID
+- **Output**: `img_UnsupervisedClassified_flood_risk` (smoothed clusters)
 
 **Method 2: HAND Threshold Slicing**
-- Three threshold levels: 3m, 4m, 5m
-- Binary classification based on height above drainage
-- Identifies potentially floodable areas
+- **Algorithm**: Physical thresholding based on Height Above Nearest Drainage
+- **Three threshold levels**:
+  - **3 meters**: Conservative estimate (areas very close to drainage)
+  - **4 meters**: Moderate flood extent
+  - **5 meters**: Liberal estimate (wider flood-prone areas)
+- **Classification rule**: HAND ≤ threshold → flood risk (class 1)
+- **Smoothing**: Focal mode filter (3x3 kernel) applied to all three outputs
+- **Outputs**:
+  - `img_SlicedClassified_flood_risk_height3m`
+  - `img_SlicedClassified_flood_risk_height4m`
+  - `img_SlicedClassified_flood_risk_height5m`
+
+**Rationale:**
+- K-means discovers natural clusters without training data
+- HAND thresholds provide physically-informed baselines
+- Both methods serve as independent validation for RF classification
+- Comparison identifies areas of consensus across methodologies
 
 **Outputs:**
-- Clustered image (smoothed)
-- Three HAND-based classifications (3m, 4m, 5m thresholds)
+- 1 clustered image (K-means)
+- 3 HAND-based binary classifications (3m, 4m, 5m thresholds)
+- All outputs smoothed and ready for urban area intersection
 
-### 5. Spatial Post-Processing
+### 5. Spatial Post-Processing and Urban Area Filtering
 **Script:** `4_SpatialPostProcessing.js`
 
-Intersects classification outputs with urban areas and applies area-based filtering.
+Refines classification outputs by intersecting with urban areas and applying area-based hotspot filtering to remove noise and isolated pixels.
 
 **Processing Steps:**
 
-1. **Urban Mask Application:**
-   - Extracts urban areas (MapBiomas class 24)
-   - Intersects with RF, K-means, and HAND classifications
+**1. Urban Area Mask Creation:**
+- Extract urban pixels from MapBiomas land cover (class 24)
+- Create binary mask: urban = 1, non-urban = 0
+- Purpose: Focus flood risk analysis on populated areas
 
-2. **Hotspot Detection:**
-   - Connected component analysis (4-connectivity)
-   - Minimum area threshold: 3,000 m²
-   - Pixel counting and area calculation
-   - Filters small isolated pixels
+**2. Crossover with Classification Outputs:**
+Three independent classifications are intersected with urban mask:
 
-3. **Quality Control:**
-   - Removes artifacts below area threshold
-   - Identifies coherent flood-prone zones
-   - Generates final risk maps
+a) **Random Forest (Semi-supervised)**:
+   - Input: `img_SemiSupervisedClassified_flood_risk`
+   - Operation: `RF_classification + urban_mask ≥ 2` → flood risk in urban area
+   - Output: `imgPost_SemiSupervisedClassified_floodRisk`
+
+b) **K-means (Unsupervised)**:
+   - Input: `img_UnsupervisedClassified_flood_risk`
+   - Reference point identifies flood cluster ID
+   - Operation: `(cluster == flood_ID) + urban_mask ≥ 2`
+   - Output: `imgPost_UnsupervisedClassified_floodRisk`
+
+c) **HAND Threshold (3m, 4m, 5m)**:
+   - Inputs: Three HAND-classified images
+   - Operation: `HAND_classification + urban_mask ≥ 2` (for each threshold)
+   - Outputs: 
+     - `imgPost_SlicedClassifiedHAND_3m_HotSpot`
+     - `imgPost_SlicedClassifiedHAND_4m_HotSpot`
+     - `imgPost_SlicedClassifiedHAND_5m_HotSpot`
+
+**3. Hotspot Detection (Connected Component Analysis):**
+Custom function `hotspotsPorArea()` applies to all five outputs:
+
+- **Connectivity**: 4-connected kernel (`ee.Kernel.plus(1)`) - cross pattern
+- **Component labeling**: `connectedComponents()` with maxSize = 1024 pixels
+- **Pixel counting**: `connectedPixelCount()` for each labeled object
+- **Area calculation**: pixel_count × pixel_area (m²)
+- **Area threshold**: Minimum 3,000 m² to be considered valid hotspot
+- **Filtering**: Objects below threshold are removed
+
+**Visualization Layers (for each method):**
+- Random color visualization of labeled objects
+- Pixel count heatmap (1 to 1024 pixels)
+- Area heatmap (0 to 3,000,000 m², blue to magenta palette)
+- Final hotspots layer (≥ 3,000 m²)
+
+**Quality Control:**
+- Removes salt-and-pepper noise (small isolated pixels)
+- Identifies coherent flood-prone zones
+- Ensures minimum meaningful area for risk designation
+- Maintains spatial contiguity
 
 **Outputs:**
-- Post-processed RF classification
-- Post-processed K-means classification
-- Post-processed HAND classifications (3m, 4m, 5m)
+- **5 post-processed classifications** (urban-filtered with hotspot analysis):
+  - `imgPost_SemiSupervisedClassified_floodRisk` (Random Forest)
+  - `imgPost_UnsupervisedClassified_floodRisk` (K-means)
+  - `imgPost_SlicedClassifiedHAND_3m_HotSpot`
+  - `imgPost_SlicedClassifiedHAND_4m_HotSpot`
+  - `imgPost_SlicedClassifiedHAND_5m_HotSpot`
+- Visualization layers for component analysis (objects, pixel counts, areas, hotspots)
 
-### 6. Final Visualization and Susceptibility Index
+### 6. Final Visualization and FSIVI Generation
 **Script:** `5_FinalPostProcessingVisualization.js`
 
-Generates flood susceptibility index based on variable importance and creates final visualizations.
+Generates the final Flood Susceptibility Index based on Variable Importance (FSIVI), performs comparative analysis of all classification methods, and creates comprehensive visualizations.
 
-**FSIVI Calculation (Flood Susceptibility Index based on Variable Importance):**
+**A. Area Calculation and Method Comparison:**
 
-```
-FSIVI = Σ (wi × fi')
-```
+1. **Reference Area Calculation:**
+   - CPRM/SGB flood risk sectors intersected with urban areas (MapBiomas class 24)
+   - Manual adjustment polygon applied for area refinement
+   - Baseline area computed in hectares for accuracy assessment
 
-Where:
-- wi = normalized importance weight of variable i (from RF)
-- fi' = normalized value of variable i
-- Inversion applied to elevation, distance, slope, conductivity (lower values = higher risk)
-- TWI used directly (higher values = higher risk)
+2. **Classification Accuracy Evaluation:**
+   Compares three methods against CPRM reference:
+   - **Unsupervised** (K-means clustering)
+   - **Semi-supervised** (Random Forest with Spy Technique)
+   - **HAND threshold-based** (3m, 4m, 5m heights)
+   
+   For each method:
+   - Intersection with CPRM flood sectors
+   - Area overlap calculation (hectares)
+   - Percentage accuracy relative to reference
 
-**Normalization:**
+**B. FSIVI Calculation (Flood Susceptibility Index based on Variable Importance):**
+
+The core contribution of this work - a weighted continuous susceptibility index that integrates all geophysical variables using Random Forest-derived importance weights.
+
+**Step 1: Spatial Masking**
+- Elevation mask: pixels ≤ maximum elevation in 200m buffer around risk sectors
+- Urban area mask: MapBiomas class 24 only
+- Combined mask applied to all 6 bands
+
+**Step 2: Feature Normalization**
+Min-max normalization for each variable:
 ```
 fi' = (fi - min) / (max - min)
 ```
 
-**Statistical Analysis:**
-- Min/max values
-- Mean, median, standard deviation
-- Variance, kurtosis, skewness
-- Percentiles (0, 25, 50, 75, 100)
-- Histogram generation
+Variables normalized:
+- `elevation_norm`
+- `distance_norm` (to rivers)
+- `slope_norm`
+- `conductivity_norm` (soil hydraulic conductivity)
+- `hand_norm`
+- `twi_norm`
 
-**Area Calculation:**
-- Overlap analysis with CPRM risk sectors
-- Accuracy percentages for each method
-- Hectare-based area quantification
+**Step 3: Variable Importance Weighting**
+Weights extracted from Random Forest variable importance scores (from script 3):
+- Each importance score normalized to sum = 1.0
+- Weights assigned: `w_elevation`, `w_distance`, `w_slope`, `w_conductivity`, `w_hand`, `w_twi`
 
-**Visualization Outputs:**
-- Heat map (continuous susceptibility index)
-- Masked heat map (over classified areas)
-- Risk zones (connected components)
-- Animated GIF (risk levels 99%-75%)
-- Highlighted attention regions
+**Step 4: Risk Inversion**
+Physical interpretation requires inversion for certain variables:
+- **Inverted** (lower values = higher flood risk): elevation, distance, slope, conductivity
+- **Direct** (higher values = higher flood risk): TWI, HAND (already flood-oriented)
 
-**Exports:**
-- Final susceptibility rasters
-- Statistical summary tables
-- Video animation (1 fps, 1024px)
-- Region-of-interest shapefiles
+Inversion formula:
+```
+fi_inverted = 1 - fi_norm
+```
+
+**Step 5: Weighted Index Calculation**
+```
+FSIVI = Σ (wi × fi_inverted_or_direct)
+      = w_elev×(1-elev_norm) + w_dist×(1-dist_norm) + w_slope×(1-slope_norm)
+      + w_cond×(1-cond_norm) + w_hand×hand_norm + w_twi×twi_norm
+```
+
+Result: Continuous index from 0 (lowest susceptibility) to 1 (highest susceptibility)
+
+**C. Statistical Analysis:**
+- Reduce region statistics: min, max, mean, median, std, variance
+- Percentile analysis: 0%, 25%, 50%, 75%, 100%
+- Skewness and kurtosis for distribution characterization
+- Histogram generation for index distribution
+- Export statistical tables to Drive/Assets
+
+**D. Visualization Outputs:**
+
+1. **Continuous Heat Map:**
+   - `heat_map_flood_risk_postClassif.tif`
+   - Full FSIVI coverage (0-1 scale)
+   - Gradient color palette (blue to red)
+
+2. **Masked Heat Map:**
+   - `heat_map_over_flood_risk_masked_postClassif.tif`
+   - FSIVI overlaid only on RF-classified flood areas
+   - Highlights most critical zones
+
+3. **Animated Risk Progression:**
+   - `floodRisk_animation.mp4` (1 fps, 1024px)
+   - Threshold sequence: 99% → 95% → 90% → 85% → 80% → 75%
+   - Shows gradual expansion of risk zones
+   - Includes text annotations and highlighted regions
+
+4. **Attention Zones:**
+   - Multiple highlighted regions of critical concern
+   - Overlay on susceptibility maps
+   - Region-specific statistics
+
+5. **Comparative Visualizations:**
+   - Side-by-side classification results (RF vs K-means vs HAND)
+   - Consensus areas (agreement across methods)
+   - Divergence areas for uncertainty quantification
+
+**E. Data Exports:**
+
+1. **Raster Exports:**
+   - Final susceptibility indices (heat maps)
+   - Post-processed classifications
+   - Connected component labels
+
+2. **Vector Exports:**
+   - Highlighted attention regions (shapefiles)
+   - Risk sector boundaries
+   - Sample points for separability analysis (`separabilityEvaluationData.csv`)
+
+3. **Tables:**
+   - Statistical summaries
+   - Area calculations by method
+   - Confusion matrices (from RF classification)
+
+4. **Animations:**
+   - Risk progression GIF/MP4
+   - Temporal visualization of threshold-based segmentation
+
+**F. Validation Summary:**
+Console output includes:
+- Total area of CPRM risk sectors in urban regions (hectares)
+- Area identified by each classification method (hectares)
+- Percentage accuracy for each method vs. CPRM reference
+- Variable importance rankings
+- FSIVI statistical distribution
 
 ## Data Sources
 
@@ -246,6 +453,12 @@ scipy>=1.7.0
 ```
 
 ## Execution Order
+
+Execute scripts in `arquivos_scripts/scripts_en/` following this sequence:
+
+0. **GEE Step 0 (Optional):** Run `1_DataExploration_and_InitialDisplay.js`
+   - Initial data exploration and quality assessment
+   - Verify data availability and visualization
 
 1. **GEE Step 1:** Run `2.1_Streams_and_RiverDistance.js`
    - Computes distance to rivers
@@ -324,29 +537,60 @@ var attention_regions_*;         // Highlighted regions
 ## Outputs Description
 
 ### Raster Outputs (GeoTIFF format)
-- `river_distance`: Euclidean distance to drainage (m)
-- `raster_spatial_data_flood`: Multi-band feature stack
-- `img_ClassifiedSemiSuperv_flood_risk`: RF classification (binary)
-- `img_ClassifiedUnsuperv_flood_risk`: K-means clustering
-- `img_ClassifiedSliced_flood_risk_height[3|4|5]m`: HAND thresholding
-- `imgPostClassified[SemiSuperv|Unsuperv|SlicedHAND_*]_floodRisk`: Post-processed (urban + area filtered)
-- `Heat_map_flood_risk_postClassif`: FSIVI continuous index
-- `Heat_map_over_flood_risk_masked_postClassif`: FSIVI over classified areas
+
+Located in `arquivos_scripts/scripts_en/files/`:
+
+- `river_distance.tif`: Euclidean distance to drainage (m)
+- `twi_par.tif`: Topographic Wetness Index
+- `spatial_data_raster_flood.tif`: Multi-band feature stack
+- `img_SemiSupervisedClassified_flood_risk.tif`: RF classification (binary)
+- `img_UnsupervisedClassified_flood_risk.tif`: K-means clustering
+- `img_SlicedClassified_flood_risk_height3m.tif`: HAND threshold 3m
+- `img_SlicedClassified_flood_risk_height4m.tif`: HAND threshold 4m
+- `img_SlicedClassified_flood_risk_height5m.tif`: HAND threshold 5m
+- `imgPost_SemiSupervisedClassified_floodRisk.tif`: Post-processed RF
+- `imgPost_UnsupervisedClassified_floodRisk.tif`: Post-processed K-means
+- `imgPost_SlicedClassifiedHAND_3m_HotSpot.tif`: Post-processed HAND 3m
+- `imgPost_SlicedClassifiedHAND_4m_HotSpot.tif`: Post-processed HAND 4m
+- `imgPost_SlicedClassifiedHAND_5m_HotSpot.tif`: Post-processed HAND 5m
+- `heat_map_flood_risk_postClassif.tif`: FSIVI continuous index
+- `heat_map_over_flood_risk_masked_postClassif.tif`: FSIVI over classified areas
+
+### CSV Outputs
+
+Located in `arquivos_scripts/scripts_en/files/`:
+
+- `floodDataset_toAsset.csv`: Training samples (raw)
+- `combined_dataset.csv`: Balanced dataset with reliable negatives
+- `separabilityEvaluationData.csv`: Separability analysis samples
 
 ### Vector Outputs (Shapefile format)
-- `rivers_streams_pgm`: Unified drainage network
-- `datasetFlood_toDrive`: Training samples (CSV)
-- `combined_dataset`: Balanced dataset with reliable negatives (CSV)
-- `dataSeparabilityEvaluation`: Separability analysis samples (CSV)
-- `highlighted_regions`: Priority attention areas
+
+Located in `arquivos_scripts/scripts_en/files/shapefiles/`:
+
+- `rivers_streams_pgm.rar`: Unified drainage network
+- `DrainageSectionsParagominas_Intersect.zip`: Drainage sections
+- `roi.zip`: Region of interest boundary
+- `risk_sectorization_PGM.rar`: CPRM risk sectors
+- `highlighted_regions.rar`: Priority attention areas
+
+### Visualizations
+
+Located in `arquivos_scripts/scripts_en/files/Maps and Images/`:
+
+- `HEAT_MAP.jpeg`: Susceptibility heat map
+- `ATTENTION_ZONES.jpeg`: High-risk attention zones
+- `URBAN_AREA.jpeg`, `URBAN_AREA2.jpeg`: Urban intersection results
+- `floodRisk_animation.mp4`: Risk progression animation
+- `zone1.jpeg` through `zone22.jpeg`: Detailed zone visualizations
+- `Attributes.jpeg`: Variable importance visualization
+- `Classes.jpeg`: Classification comparison
+- Additional maps and location references (36 files total)
 
 ### Tables
-- `importance_attributes_flood`: Variable importance scores
+- Variable importance scores (exported to Drive/Assets)
 - Confusion matrices (printed to console)
 - Statistical summaries (console output)
-
-### Animations
-- `floodRisk_animation.gif`: Risk progression (99%-75% thresholds)
 
 ## Validation
 
