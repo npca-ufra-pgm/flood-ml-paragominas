@@ -639,7 +639,7 @@ The methodology includes multiple validation approaches:
 
 ## License
 
-MIT License (or specify your chosen license)
+MIT License
 
 ## Data Availability
 
@@ -669,9 +669,9 @@ If you use this code or methodology in your research, please cite:
 [Add your citation here after publication]
 ```
 
-## Contact
+<!-- ## Contact
 
-[Add contact information]
+[Add contact information] -->
 
 ## Acknowledgments
 
