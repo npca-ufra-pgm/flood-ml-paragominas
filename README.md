@@ -682,6 +682,8 @@ This work utilizes publicly available datasets from:
 - MapBiomas Brasil
 - CPRM/Serviço Geológico do Brasil
 
+**Documentation:** This README was prepared with assistance from GitHub Copilot (Claude Sonnet 4.5) for technical documentation, code review, and repository structure optimization.
+
 ## References
 
 Key datasets and methodologies:
