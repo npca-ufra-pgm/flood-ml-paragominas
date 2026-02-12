@@ -18,33 +18,35 @@ The final output is the FSIVI (Flood Susceptibility Index based on Variable Impo
 
 ```
 flood-ml-paragominas/
-├── arquivos_scripts/
-│   ├── scripts_en/                    # Main implementation scripts
-│   │   ├── 1_DataExploration_and_InitialDisplay.js
-│   │   ├── 2.1_Streams_and_RiverDistance.js
-│   │   ├── 2.2_SpatialDatasetGeneration.js
-│   │   ├── 2.n_6.n_DataProcessToSemiSuperv_and_SeparabilityAnalysis.ipynb
-│   │   ├── 3_UnsupervisedSpatialProcessing.js
-│   │   ├── 3_SemiSupervisedSpatialProcessing.js
-│   │   ├── 4_SpatialPostProcessing.js
-│   │   ├── 5_FinalPostProcessingVisualization.js
-│   │   ├── README.md                  # Detailed technical documentation
-│   │   ├── TRANSLATION_INDEX.md       # File reference guide
-│   │   └── files/                     # Data files and outputs
-│   │       ├── combined_dataset.csv
-│   │       ├── separabilityEvaluationData.csv
-│   │       ├── floodDataset_toAsset.csv
-│   │       ├── *.tif                  # Raster outputs (15 files)
-│   │       ├── Maps and Images/       # Visualizations (36 files)
-│   │       └── shapefiles/            # Vector data (5 files)
-│   └── [original files]               # Source files
-├── bkp/                               # Backup directory
+├── scripts/                           # Main implementation scripts
+│   ├── 1_DataExploration_and_InitialDisplay.js
+│   ├── 2.1_Streams_and_RiverDistance.js
+│   ├── 2.2_SpatialDatasetGeneration.js
+│   ├── 2.n_6.n_DataProcessToSemiSuperv_and_SeparabilityAnalysis.ipynb
+│   ├── 3_UnsupervisedSpatialProcessing.js
+│   ├── 3_SemiSupervisedSpatialProcessing.js
+│   ├── 4_SpatialPostProcessing.js
+│   ├── 5_FinalPostProcessingVisualization.js
+│   └── files/                         # Data files and outputs
+│       ├── combined_dataset.csv       # Balanced dataset (41,486 samples)
+│       ├── separabilityEvaluationData.csv  # Separability samples (387,098)
+│       ├── floodDataset_toAsset.csv   # Initial dataset (38,572 samples)
+│       ├── *.tif                      # Raster outputs (15 files, gitignored)
+│       ├── twi_par.txt                # TWI file reference (large .tif excluded)
+│       ├── Maps and Images/           # Visualizations
+│       │   └── Paragominas.qgz        # QGIS project for TWI generation
+│       └── shapefiles/                # Vector data (gitignored)
+├── .gitignore                         # Excludes large files (*.tif, *.zip, *.rar)
+├── LICENSE
 └── README.md                          # This file
 ```
 
 ## Methodology Workflow
 
-All scripts are located in `arquivos_scripts/scripts_en/`. Execute them in the order indicated below.
+All scripts are located in the `scripts/` directory. Execute them in the order indicated below.
+
+**Important Note on Data Files:**  
+Large raster files (*.tif, 50-200 MB each) and shapefiles (*.zip, *.rar) are excluded from this repository via `.gitignore` to comply with GitHub's 100 MB file size limit. These files are generated during script execution or must be obtained from original data sources. The `twi_par.txt` file contains a reference to the original TWI raster location.
 
 ### 0. Initial Data Exploration
 **Script:** `1_DataExploration_and_InitialDisplay.js`
@@ -454,7 +456,7 @@ scipy>=1.7.0
 
 ## Execution Order
 
-Execute scripts in `arquivos_scripts/scripts_en/` following this sequence:
+Execute scripts in the `scripts/` directory following this sequence:
 
 0. **GEE Step 0 (Optional):** Run `1_DataExploration_and_InitialDisplay.js`
    - Initial data exploration and quality assessment
@@ -538,11 +540,13 @@ var attention_regions_*;         // Highlighted regions
 
 ### Raster Outputs (GeoTIFF format)
 
-Located in `arquivos_scripts/scripts_en/files/`:
+**Important:** Raster files are NOT included in the Git repository due to size constraints (50-200 MB per file). They are generated during script execution and should be stored locally or in Google Earth Engine Assets.
+
+Expected raster outputs:
 
 - `river_distance.tif`: Euclidean distance to drainage (m)
-- `twi_par.tif`: Topographic Wetness Index
-- `spatial_data_raster_flood.tif`: Multi-band feature stack
+- `twi_par.tif`: Topographic Wetness Index (see twi_par.txt for reference)
+- `spatial_data_raster_flood.tif`: Multi-band feature stack (7 bands)
 - `img_SemiSupervisedClassified_flood_risk.tif`: RF classification (binary)
 - `img_UnsupervisedClassified_flood_risk.tif`: K-means clustering
 - `img_SlicedClassified_flood_risk_height3m.tif`: HAND threshold 3m
@@ -556,36 +560,52 @@ Located in `arquivos_scripts/scripts_en/files/`:
 - `heat_map_flood_risk_postClassif.tif`: FSIVI continuous index
 - `heat_map_over_flood_risk_masked_postClassif.tif`: FSIVI over classified areas
 
+Current repository includes 15 .tif files (see `scripts/files/`).
+
 ### CSV Outputs
 
-Located in `arquivos_scripts/scripts_en/files/`:
+Located in `scripts/files/`:
 
-- `floodDataset_toAsset.csv`: Training samples (raw)
-- `combined_dataset.csv`: Balanced dataset with reliable negatives
-- `separabilityEvaluationData.csv`: Separability analysis samples
+- `floodDataset_toAsset.csv`: Initial training samples (38,572 records)
+- `combined_dataset.csv`: Balanced dataset after SMOTE + Spy Technique (41,486 records)
+- `separabilityEvaluationData.csv`: Samples for separability analysis (387,098 records)
+
+**Note on Column Names:** CSV files exported from Google Earth Engine use Portuguese column names:
+- `condutividade_hidraulica_solo` = soil_hydraulic_conductivity
+- `declividade` = slope  
+- `distancia` = distance
+- `elevacao` = elevation
+- `classes` / `new_class` = class labels (0=unlabeled, 1=flood, -1=reliable negative)
 
 ### Vector Outputs (Shapefile format)
 
-Located in `arquivos_scripts/scripts_en/files/shapefiles/`:
+**Important:** Shapefile archives (*.zip, *.rar) are excluded from the repository via `.gitignore` due to size constraints. These should be obtained from original data sources or generated during script execution.
 
-- `rivers_streams_pgm.rar`: Unified drainage network
-- `DrainageSectionsParagominas_Intersect.zip`: Drainage sections
-- `roi.zip`: Region of interest boundary
-- `risk_sectorization_PGM.rar`: CPRM risk sectors
-- `highlighted_regions.rar`: Priority attention areas
+Expected shapefiles in `scripts/files/shapefiles/`:
+
+- `rivers_streams_pgm.rar`: Unified drainage network (generated by script 2.1)
+- `DrainageSectionsParagominas_Intersect.zip`: Drainage sections (input data required)
+- `roi.zip`: Region of interest boundary (input data required)
+- `risk_sectorization_PGM.rar`: CPRM/SGB risk sectors (input data required)
+- `highlighted_regions.rar`: Priority attention areas (generated by script 5)
 
 ### Visualizations
 
-Located in `arquivos_scripts/scripts_en/files/Maps and Images/`:
+**Important:** Visualization outputs (images and videos) are generated during script execution and are not included in the repository to minimize size.
+
+Expected outputs in `scripts/files/Maps and Images/`:
 
 - `HEAT_MAP.jpeg`: Susceptibility heat map
 - `ATTENTION_ZONES.jpeg`: High-risk attention zones
 - `URBAN_AREA.jpeg`, `URBAN_AREA2.jpeg`: Urban intersection results
-- `floodRisk_animation.mp4`: Risk progression animation
+- `floodRisk_animation.mp4` / `.gif`: Risk progression animation
 - `zone1.jpeg` through `zone22.jpeg`: Detailed zone visualizations
 - `Attributes.jpeg`: Variable importance visualization
 - `Classes.jpeg`: Classification comparison
-- Additional maps and location references (36 files total)
+- Additional location references and comparative maps
+
+**Currently in repository:**
+- `Paragominas.qgz`: QGIS project file used for TWI generation (SAGA tools)
 
 ### Tables
 - Variable importance scores (exported to Drive/Assets)
@@ -619,7 +639,48 @@ The methodology includes multiple validation approaches:
 
 ## License
 
-[Specify your license here]
+MIT License (or specify your chosen license)
+
+## Data Availability
+
+Due to GitHub's file size limitations (100 MB), large data files are excluded from this repository:
+
+**Excluded via `.gitignore`:**
+- Raster files (*.tif): 15 files, ~50-200 MB each
+- Shapefiles (*.zip, *.rar): Vector data archives
+- Visualization outputs: Images and animations
+
+**To reproduce this work:**
+1. Input shapefiles must be obtained from CPRM/SGB and local data sources
+2. The TWI raster (`twi_par.tif`) must be generated using QGIS SAGA tools (see `Paragominas.qgz`)
+3. All other rasters are generated by running scripts 1-7 in sequence
+4. Google Earth Engine Assets are required for intermediate data storage
+
+**Included in repository:**
+- All 8 processing scripts (~2,600 lines of code)
+- 3 CSV datasets (467,156 total records)
+- QGIS project file for TWI generation
+
+## Citation
+
+If you use this code or methodology in your research, please cite:
+
+```
+[Add your citation here after publication]
+```
+
+## Contact
+
+[Add contact information]
+
+## Acknowledgments
+
+This work utilizes publicly available datasets from:
+- Global HAND Project
+- ANADEM Brazil (UFRGS)
+- HiHydroSoil v2.0
+- MapBiomas Brasil
+- CPRM/Serviço Geológico do Brasil
 
 ## References
 
