@@ -639,7 +639,7 @@ The methodology includes multiple validation approaches:
 
 ## License
 
-MIT License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Data Availability
 
@@ -666,10 +666,12 @@ Due to GitHub's file size limitations (100 MB), large data files are excluded fr
 If you use this code or methodology in your research, please cite:
 
 ```
-[Add your citation here after publication]
+Citation will be provided upon publication acceptance.
 ```
 
-<!-- ## Contact
+**Note:** This work is currently under review for ICML 2026.
+
+Contact information will be provided upon publication to maintain blind review process.
 
 [Add contact information] -->
 
